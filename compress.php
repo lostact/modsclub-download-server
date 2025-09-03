@@ -121,30 +121,40 @@ while (file_exists("compressed/{$file_id}_incomplete.zip"))
     usleep(1000);
 }
 
-// prepare 7z command with proper folder structure - everything inside file_id folder:
-$zip_command = "timeout 600s 7z a -tzip compressed/{$file_id}_incomplete.zip -xr!.git -mx1 -bsp1 -bso1 -l";
+// create temporary directory structure with symbolic link for proper zip structure
+$temp_structure_dir = "temp_structure_{$file_id}";
+$temp_mod_dir = "{$temp_structure_dir}/{$file_id}";
 
-// add mod contents to file_id folder (exclude original descriptor if we have a modified one)
-if ($descriptor_found) {
-    $zip_command .= " -x!{$descriptor_filename}";
+// create the temp structure directory and symbolic link to mod directory
+exec("mkdir -p {$temp_structure_dir}");
+$mod_path_absolute = realpath($mod_path);
+exec("ln -s {$mod_path_absolute} {$temp_mod_dir}");
+
+// link installer to the symlinked directory if needed
+if ($installer_path && file_exists($installer_path)) {
+    $installer_absolute = realpath($installer_path);
+    exec("ln -s {$installer_absolute} {$temp_mod_dir}/ModInstaller.exe");
 }
-$zip_command .= " {$mod_path}/*={$file_id}/";
 
-// add installer to file_id folder if needed
-if ($installer_path) {
-    $zip_command .= " {$installer_path}={$file_id}/ModInstaller.exe";
-}
-
-// add modified descriptor with correct name to file_id folder if we have one
+// link modified descriptor to the symlinked directory if we have one
 if ($descriptor_found && file_exists($temp_descriptor_path)) {
-    $zip_command .= " {$temp_descriptor_path}={$file_id}/descriptor.mod";
+    $descriptor_absolute = realpath($temp_descriptor_path);
+    exec("ln -s {$descriptor_absolute} {$temp_mod_dir}/descriptor.mod");
+    
+    // remove original descriptor if it exists and we have a modified one
+    if (file_exists("{$temp_mod_dir}/{$descriptor_filename}") && $descriptor_filename != "descriptor.mod") {
+        exec("rm {$temp_mod_dir}/{$descriptor_filename}");
+    }
 }
+
+// compress from within the temp structure directory to get correct paths
+$zip_command = "cd {$temp_structure_dir} && timeout 600s 7z a -tzip ../compressed/{$file_id}_incomplete.zip -xr!.git -mx1 -bsp1 -bso1 -l {$file_id}";
 
 // start compressing then rename the archive and cleanup temp files:
-$cleanup_cmd = "";
-if ($installer_path && $descriptor_found && file_exists($temp_descriptor_path))
+$cleanup_cmd = "rm -rf {$temp_structure_dir}";
+if ($descriptor_found && file_exists($temp_descriptor_path))
 {
-    $cleanup_cmd = " rm -f {$temp_descriptor_path} ;";
+    $cleanup_cmd .= " ; rm -f {$temp_descriptor_path}";
 }
-exec("{ " . $zip_command . " ; mv compressed/{$file_id}_incomplete.zip compressed/{$file_id}.zip ;" . $cleanup_cmd . " } > status/{$file_id}");
+exec("{ " . $zip_command . " ; mv compressed/{$file_id}_incomplete.zip compressed/{$file_id}.zip ; " . $cleanup_cmd . " ; } > status/{$file_id}");
 ?>
