@@ -8,6 +8,11 @@ if (!isset($file_id)) {
 }
 $status_file_path = "status/{$file_id}";
 
+if(!is_file($status_file_path))
+{
+    echo '0';
+    die();
+}
 
 $text = file_get_contents($status_file_path);
 preg_match('/Server is busy/', $text, $matches);
