@@ -121,17 +121,23 @@ while (file_exists("compressed/{$file_id}_incomplete.zip"))
     usleep(1000);
 }
 
-// prepare 7z command - include installer and modified descriptor if needed:
-$zip_command = "timeout 600s 7z a -tzip compressed/{$file_id}_incomplete.zip {$mod_path}/ -xr!.git -mx1 -bsp1 -bso1 -l";
-if ($installer_path && $descriptor_found)
-{
-    // exclude original descriptor and add our modified one plus installer
-    $zip_command = "timeout 600s 7z a -tzip compressed/{$file_id}_incomplete.zip {$mod_path}/ {$installer_path} {$temp_descriptor_path} -xr!.git -x!{$descriptor_filename} -mx1 -bsp1 -bso1 -l";
+// prepare 7z command with proper folder structure - everything inside file_id folder:
+$zip_command = "timeout 600s 7z a -tzip compressed/{$file_id}_incomplete.zip -xr!.git -mx1 -bsp1 -bso1 -l";
+
+// add mod contents to file_id folder (exclude original descriptor if we have a modified one)
+if ($descriptor_found) {
+    $zip_command .= " -x!{$descriptor_filename}";
 }
-else if ($installer_path)
-{
-    // just add installer without descriptor modifications
-    $zip_command = "timeout 600s 7z a -tzip compressed/{$file_id}_incomplete.zip {$mod_path}/ {$installer_path} -xr!.git -mx1 -bsp1 -bso1 -l";
+$zip_command .= " {$mod_path}/*={$file_id}/";
+
+// add installer to file_id folder if needed
+if ($installer_path) {
+    $zip_command .= " {$installer_path}={$file_id}/ModInstaller.exe";
+}
+
+// add modified descriptor with correct name to file_id folder if we have one
+if ($descriptor_found && file_exists($temp_descriptor_path)) {
+    $zip_command .= " {$temp_descriptor_path}={$file_id}/descriptor.mod";
 }
 
 // start compressing then rename the archive and cleanup temp files:
