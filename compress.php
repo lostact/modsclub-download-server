@@ -140,5 +140,5 @@ if ($installer_path && $descriptor_found && file_exists($temp_descriptor_path))
 {
     $cleanup_cmd = " rm -f {$temp_descriptor_path} ;";
 }
-exec("{{$zip_command} ; mv compressed/{$file_id}_incomplete.zip compressed/{$file_id}.zip ;{$cleanup_cmd} } > status/{$file_id}");
+exec("{ " . $zip_command . " ; mv compressed/{$file_id}_incomplete.zip compressed/{$file_id}.zip ;" . $cleanup_cmd . " } > status/{$file_id}");
 ?>
