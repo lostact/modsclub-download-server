@@ -5,13 +5,12 @@ ignore_user_abort(true);
 // paradox appids that need descriptior proccessing and installer file:
 $paradox_appids = [394360, 236850, 203770, 1158310, 42960, 529340, 281990, 859580];
 
-if (!(isset($argv[1]) && isset($argv[2]) && isset($argv[3]))) {
-    die('Missing required arguments: app_id, file_id, timestamp');
+if (!(isset($argv[1]) && isset($argv[2]))) {
+    die('Missing required arguments: app_id, file_id');
 }
 
 $app_id = $argv[1];
 $file_id = $argv[2];
-$timestamp = $argv[3];
 
 $mod_path = "workshop/{$app_id}/{$file_id}";
 
@@ -92,6 +91,6 @@ if ($installer_path)
     $zip_command = "timeout 600s 7z a -tzip compressed/{$file_id}_incomplete.zip {$mod_path}/ {$installer_path} -xr!.git -mx1 -bsp1 -bso1 -l";
 }
 
-// start compressing then rename the archive and reset target mod folder timestamps:
-exec("{{$zip_command} ; touch -d \"{$timestamp}\" {$mod_path} ; mv compressed/{$file_id}_incomplete.zip compressed/{$file_id}.zip; } > status/{$file_id}");
+// start compressing then rename the archive:
+exec("{{$zip_command} ; mv compressed/{$file_id}_incomplete.zip compressed/{$file_id}.zip; } > status/{$file_id}");
 ?>

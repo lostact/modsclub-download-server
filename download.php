@@ -114,11 +114,8 @@ if (is_dir($mod_path))
         // touch the final file to prevent concurrent compression:
         touch("compressed/{$file_id}_incomplete.zip");
 
-        // get timestamp for later restoration
-        $timestamp = exec("stat -c %y {$mod_path}");
-
         // start background compression using separate script - runs completely in background
-        exec("nohup php compress.php {$app_id} {$file_id} \"{$timestamp}\" > /dev/null 2>&1 &");
+        exec("nohup php compress.php {$app_id} {$file_id} > /dev/null 2>&1 &");
     }
     
     // Request completes immediately, compression continues in background
