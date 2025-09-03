@@ -133,13 +133,13 @@ exec("ln -s {$mod_path_absolute} {$temp_mod_dir}");
 // link installer to the symlinked directory if needed
 if ($installer_path && file_exists($installer_path)) {
     $installer_absolute = realpath($installer_path);
-    exec("ln -s {$installer_absolute} {$temp_mod_dir}/ModInstaller.exe");
+    exec("ln -s {$installer_absolute} {$temp_structure_dir}/ModInstaller.exe");
 }
 
 // link modified descriptor to the symlinked directory if we have one
 if ($descriptor_found && file_exists($temp_descriptor_path)) {
     $descriptor_absolute = realpath($temp_descriptor_path);
-    exec("ln -s {$descriptor_absolute} {$temp_mod_dir}/descriptor.mod");
+    exec("ln -s {$descriptor_absolute} {$temp_structure_dir}/descriptor.mod");
     
     // remove original descriptor if it exists and we have a modified one
     if (file_exists("{$temp_mod_dir}/{$descriptor_filename}") && $descriptor_filename != "descriptor.mod") {
