@@ -2,3 +2,4 @@ compressed/
 status/
 workshop/
 *.exe
+*.json

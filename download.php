@@ -61,7 +61,7 @@ if (is_dir($mod_path))
         <title>دانلود فایل</title>
         <meta name='viewport' content='width=device-width, initial-scale=1'>
         <script type='text/javascript' src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.3/jquery.min.js'></script>
-        <link rel='stylesheet' type='text/css' href='assets/styles.css' media='screen' />
+        <link rel='stylesheet' type='text/css' href='/assets/styles.css' media='screen' />
         <title></title>
     </head>
         <body style="direction: rtl;font-family: Vazir">
@@ -115,7 +115,7 @@ if (is_dir($mod_path))
         touch("compressed/{$file_id}_incomplete.zip");
 
         // start background compression using separate script - runs completely in background
-        exec("nohup php compress.php {$app_id} {$file_id} > /dev/null 2>&1 &");
+        exec("nohup php compress.php {$app_id} {$file_id} > log 2>&1 &");
     }
     
     // Request completes immediately, compression continues in background

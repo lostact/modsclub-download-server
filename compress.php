@@ -83,15 +83,15 @@ if (in_array((int) $app_id, $paradox_appids))
 
     // create a temporary modified descriptor file since workshop is readonly:
     $temp_descriptor_path = "temp_descriptor_{$file_id}.mod";
-    
+
     if ($descriptor_found) {
         // check if we extracted it or it exists in the original location
         $source_descriptor = file_exists("temp_extracted_descriptor_{$file_id}.mod")
             ? "temp_extracted_descriptor_{$file_id}.mod"
             : $mod_path . "/{$descriptor_filename}";
-        
+
         $descriptor_text = file_get_contents($source_descriptor);
-        
+
         // add extra information to the descriptor content:
         if (strpos($descriptor_text, "appid=") === false)
         {
@@ -101,24 +101,17 @@ if (in_array((int) $app_id, $paradox_appids))
         {
             $descriptor_text .= "\nname=\"{$file_id}\"";
         }
-        
+
         // write the modified descriptor to temp location
         file_put_contents($temp_descriptor_path, $descriptor_text);
-        
+
         // cleanup extracted descriptor if it exists
         if (file_exists("temp_extracted_descriptor_{$file_id}.mod")) {
             unlink("temp_extracted_descriptor_{$file_id}.mod");
         }
     }
-    
-    $installer_path = "ModInstaller.exe";
-}
 
-// remove temp final file
-unlink("compressed/{$file_id}_incomplete.zip");
-while (file_exists("compressed/{$file_id}_incomplete.zip"))
-{
-    usleep(1000);
+    $installer_path = "ModInstaller.exe";
 }
 
 // create temporary directory structure with symbolic link for proper zip structure
@@ -126,35 +119,41 @@ $temp_structure_dir = "temp_structure_{$file_id}";
 $temp_mod_dir = "{$temp_structure_dir}/{$file_id}";
 
 // create the temp structure directory and symbolic link to mod directory
-exec("mkdir -p {$temp_structure_dir}");
+exec("mkdir -p {$temp_structure_dir}/{$file_id}");
 $mod_path_absolute = realpath($mod_path);
-exec("ln -s {$mod_path_absolute} {$temp_mod_dir}");
+exec("ln -s {$mod_path_absolute}/" . '*' . " {$temp_mod_dir}");
 
 // link installer to the symlinked directory if needed
 if ($installer_path && file_exists($installer_path)) {
     $installer_absolute = realpath($installer_path);
-    exec("ln -s {$installer_absolute} {$temp_structure_dir}/ModInstaller.exe");
+    exec("ln -s {$installer_absolute} {$temp_mod_dir}/ModInstaller.exe");
 }
 
 // link modified descriptor to the symlinked directory if we have one
 if ($descriptor_found && file_exists($temp_descriptor_path)) {
-    $descriptor_absolute = realpath($temp_descriptor_path);
-    exec("ln -s {$descriptor_absolute} {$temp_structure_dir}/descriptor.mod");
-    
     // remove original descriptor if it exists and we have a modified one
-    if (file_exists("{$temp_mod_dir}/{$descriptor_filename}") && $descriptor_filename != "descriptor.mod") {
+    if (file_exists("{$temp_mod_dir}/{$descriptor_filename}")) {
         exec("rm {$temp_mod_dir}/{$descriptor_filename}");
     }
+
+    $descriptor_absolute = realpath($temp_descriptor_path);
+    exec("ln -s {$descriptor_absolute} {$temp_mod_dir}/descriptor.mod");
 }
 
 // compress from within the temp structure directory to get correct paths
-$zip_command = "cd {$temp_structure_dir} && timeout 600s 7z a -tzip ../compressed/{$file_id}_incomplete.zip -xr!.git -mx1 -bsp1 -bso1 -l {$file_id}";
+$zip_command = "cd {$temp_structure_dir} && timeout 1800s 7z a -tzip ../compressed/{$file_id}_incomplete.zip -xr!.git -mmt4 -mx1 -bsp1 -bso1 -l * ; cd ..";
 
 // start compressing then rename the archive and cleanup temp files:
-$cleanup_cmd = "rm -rf {$temp_structure_dir}";
-if ($descriptor_found && file_exists($temp_descriptor_path))
+$cleanup_cmd = "rm -rf {$temp_structure_dir} compressed/{$file_id}_incomplete.zip";
+if (file_exists($temp_descriptor_path))
 {
-    $cleanup_cmd .= " ; rm -f {$temp_descriptor_path}";
+    $cleanup_cmd .= " {$temp_descriptor_path}";
 }
-exec("{ " . $zip_command . " ; mv compressed/{$file_id}_incomplete.zip compressed/{$file_id}.zip ; " . $cleanup_cmd . " ; } > status/{$file_id}");
+
+// remove temp final file
+exec("rm compressed/{$file_id}_incomplete.zip");
+
+// start compression
+exec("{ " . $zip_command . " && mv compressed/{$file_id}_incomplete.zip compressed/{$file_id}.zip ; " . $cleanup_cmd . " ; } > status/{$file_id}");
+
 ?>
